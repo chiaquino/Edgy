@@ -26,14 +26,17 @@ jobs:
 
       - name: Compile Edgy with Nuitka
         run: |
-          python -m nuitka main.py ^
-            --standalone ^
-            --onefile ^
-            --enable-plugin=tk-inter ^
-            --include-data-dir=assets=assets ^
-            --include-data-files=logic_config.js=logic_config.js ^
-            --output-dir=build ^
-            --output-filename=Edgy
+          # Common Nuitka options for all OSes
+          python -m nuitka main.py \
+            --standalone \
+            --onefile \
+            --enable-plugin=tk-inter \
+            --include-data-dir=assets=assets \
+            --include-data-files=logic_config.js=logic_config.js \
+            --output-dir=build \
+            --output-filename=Edgy \
+            ${{ matrix.os == 'windows-latest' && '--windows-icon-from-ico=assets/log.ico' || '' }} \
+            ${{ matrix.os == 'macos-latest' && '--macos-app-icon=assets/log.icns' || '' }}
 
       - name: Upload built executable
         uses: actions/upload-artifact@v4
