@@ -1,0 +1,22 @@
+{
+  "LOGIC_3SCORERS": {
+    "no,no,no": "no",
+    "no,unsure,no": "no",
+    "no,unsure,unsure": "yes",
+    "unsure,unsure,unsure": "yes",
+    "yes,no,no": "yes",
+    "yes,no,unsure": "yes",
+    "yes,unsure,unsure": "yes",
+    "yes,yes,no": "yes",
+    "yes,yes,unsure": "yes",
+    "yes,yes,yes": "yes"
+  },
+  "LOGIC_2SCORERS": {
+    "no,no": "no",
+    "unsure,no": "yes",
+    "unsure,unsure": "yes",
+    "yes,no": "yes",
+    "yes,unsure": "yes",
+    "yes,yes": "yes"
+  }
+}
