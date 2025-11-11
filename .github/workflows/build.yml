@@ -25,13 +25,15 @@ jobs:
           pip install nuitka
 
       - name: Compile Edgy with Nuitka
+        shell: bash    # 👈 This forces bash syntax on all OSes (fixes the "\" issue)
         run: |
-          # Common Nuitka options for all OSes
+          echo "Compiling Edgy on ${{ matrix.os }}..."
           python -m nuitka main.py \
             --standalone \
             --onefile \
             --enable-plugin=tk-inter \
             --include-data-dir=assets=assets \
+            --include-data-files=logic_config.js=logic_config.js \
             --include-data-files=logic_config.json=logic_config.json \
             --output-dir=build \
             --output-filename=Edgy \
@@ -43,3 +45,4 @@ jobs:
         with:
           name: Edgy-${{ matrix.os }}
           path: build/
+
