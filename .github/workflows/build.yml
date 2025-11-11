@@ -32,6 +32,7 @@ jobs:
             --standalone \
             --onefile \
             --enable-plugin=tk-inter \
+            --assume-yes-for-downloads \
             --include-data-dir=assets=assets \
             --include-data-files=logic_config.json=logic_config.json \
             --output-dir=build \
