@@ -1,6 +1,5 @@
 
 import tkinter as tk
-from tkinterdnd2 import TkinterDnD, DND_FILES
 from tkinter import filedialog, messagebox, ttk, simpledialog, Toplevel, Checkbutton, IntVar, Label, Button, Frame 
 from tkinter import font as tkfont
 import pandas as pd
