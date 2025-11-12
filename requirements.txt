@@ -1,3 +1,6 @@
-pandas
-python-docx
+tkinterdnd2
+Pillow
 openpyxl
+pandas
+numpy
+python-docx
