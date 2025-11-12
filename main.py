@@ -66,15 +66,20 @@ def get_font(size=10, weight="normal", slant="roman"):
     """Return a font tuple using the global APP_FONT_NAME."""
     return (APP_FONT_NAME, size, weight)
 
+
 def resource_path(relative_path):
-    """Get absolute path to resource, works for dev and for PyInstaller."""
-    try:
-        # When the app is run from a PyInstaller bundle
-        base_path = sys._MEIPASS
-    except Exception:
-        # When run from source code
+    """Get absolute path to resource, works for dev and for Nuitka onefile builds."""
+    # Nuitka (like PyInstaller) creates a temporary folder for onefile mode,
+    # but it may expose it differently depending on version.
+    if hasattr(sys, "_MEIPASS"):
+        base_path = sys._MEIPASS  # works for both PyInstaller and Nuitka
+    elif hasattr(sys, "_MEIPASS2"):
+        base_path = sys._MEIPASS2  # older Nuitka versions
+    else:
         base_path = os.path.abspath(".")
     return os.path.join(base_path, relative_path)
+
+
 
 
 class ToolTip:
