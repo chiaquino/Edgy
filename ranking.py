@@ -87,7 +87,7 @@ def format_ranking_table(file_path, top_n_to_shade=0):
     headers = {str(cell.value).strip(): cell.column_letter for cell in ws[1] if cell.value}
     ranking_col = headers.get("Ranking")
     avg_col = headers.get("Average Score")
-    var_col = headers.get("Marking Variance")
+    var_col = headers.get("Score Range")
     name_col = headers.get("Organisation Name")
 
     # === Apply base formatting (white + borders) ===
@@ -164,6 +164,7 @@ def make_ranking(responses_path, output_ranking, scorers_folders, selected_colum
     # --- STEP 1: Load Responses safely ---
     with safe_open_excel(responses_path, "rb") as f:
         df_responses = pd.read_excel(f)
+        
 
     # Keep only user-selected columns (plus the organisation name column)
     if selected_columns:
@@ -245,6 +246,7 @@ def make_ranking(responses_path, output_ranking, scorers_folders, selected_colum
     
         df["Cleaned Name"] = df["Organisation Name"].apply(clean_name)
         df["Scorer Name"] = scorer_name
+        
     
         scorer_data.append(df)
 
@@ -253,6 +255,7 @@ def make_ranking(responses_path, output_ranking, scorers_folders, selected_colum
         raise ValueError("❌ No valid scorecard files found in the selected folders.")
 
     scorer_df = pd.concat(scorer_data, ignore_index=True)
+    
 
     # --- STEP 3: Merge scorers with responses ---
     if (
@@ -264,7 +267,14 @@ def make_ranking(responses_path, output_ranking, scorers_folders, selected_colum
         merge_key = "Cleaned Name"
 
     df_rank = df_responses.drop_duplicates(subset=merge_key, keep="first")
+
+    
     df_merged = pd.merge(df_rank, scorer_df, on=merge_key, how="left")
+    
+
+
+    
+    
 
     # --- STEP 4: Clean + limit scorers ---
     df_merged["Index"] = df_merged.groupby("Cleaned Name").cumcount() + 1
@@ -280,7 +290,9 @@ def make_ranking(responses_path, output_ranking, scorers_folders, selected_colum
     )
     pivot_df.columns = [f"{col[0]}{col[1]}" for col in pivot_df.columns]
     pivot_df = pivot_df.reset_index()
+    
 
+    
     # --- STEP 6: Restore original names from Responses ---
     name_map = (
         df_responses.drop_duplicates(subset="Cleaned Name")
@@ -295,29 +307,36 @@ def make_ranking(responses_path, output_ranking, scorers_folders, selected_colum
     unique_data = df_responses.drop_duplicates(subset="Cleaned Name")[["Cleaned Name"] + other_cols]
     final_df = pd.merge(pivot_df, unique_data, on="Cleaned Name", how="left")
     final_df.drop(columns=["Cleaned Name"], inplace=True)
+    
+
+    
 
     # --- STEP 8: Compute averages, variance, ranking ---
-    score_cols = [c for c in final_df.columns if c.startswith("Score")]
+    score_cols = [c for c in final_df.columns if c.startswith("Score") and not c.startswith("Scorer")]
 
     for col in score_cols:
         final_df[col] = pd.to_numeric(final_df[col], errors="coerce")
 
     if score_cols:
         final_df["Average Score"] = final_df[score_cols].mean(axis=1, skipna=True)
-        final_df["Marking Variance"] = final_df[score_cols].var(axis=1, skipna=True).fillna(0)
+        final_df["Score Range"] = final_df[score_cols].max(axis=1) - final_df[score_cols].min(axis=1)
         ranked = final_df["Average Score"].replace([np.inf, -np.inf], np.nan)
         final_df["Ranking"] = ranked.rank(ascending=False, method="dense").astype("Int64")
     else:
         final_df["Average Score"] = np.nan
-        final_df["Marking Variance"] = np.nan
+        final_df["Score Range"] = np.nan
         final_df["Ranking"] = np.nan
+        
+        
 
     # --- STEP 9: Reorder columns ---
-    info_cols = ["Average Score", "Marking Variance", "Ranking"]
+    info_cols = ["Average Score", "Score Range", "Ranking"]
     base_cols = ["Organisation Name"] + info_cols
     scoring_cols = [f"{x}{i}" for i in range(1, 4) for x in ["Score", "Scorer Name", "Comments"]]
     optional_cols = [c for c in final_df.columns if c not in base_cols + scoring_cols]
+
     final_df = final_df[[c for c in base_cols + scoring_cols + optional_cols if c in final_df.columns]]
+    
 
     # --- STEP 10: Sort by Ranking ascending (1 = best) ---
     final_df = final_df.sort_values(by="Ranking", ascending=True, na_position="last")
@@ -325,8 +344,8 @@ def make_ranking(responses_path, output_ranking, scorers_folders, selected_colum
     # --- STEP 11: Format numeric precision ---
     if "Average Score" in final_df.columns:
         final_df["Average Score"] = final_df["Average Score"].round(2)
-    if "Marking Variance" in final_df.columns:
-        final_df["Marking Variance"] = final_df["Marking Variance"].round(2)
+    if "Score Range" in final_df.columns:
+        final_df["Score Range"] = final_df["Score Range"].round(2)
 
     # --- STEP 12: Save and format safely ---
     safe_save_excel(final_df.to_excel, output_ranking, index=False)
@@ -338,3 +357,5 @@ def make_ranking(responses_path, output_ranking, scorers_folders, selected_colum
         f"The ranking file has been created successfully!"
     )
     print(f"✅ Ranking file saved successfully")
+
+
