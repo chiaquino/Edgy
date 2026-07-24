@@ -36,7 +36,7 @@ jobs:
             --output-dir=build \
             --output-filename=Edgy \
             ${{ matrix.os == 'windows-latest' && '--windows-icon-from-ico=assets/logo.ico --windows-console-mode=disable' || '' }} \
-            ${{ matrix.os == 'macos-latest' && '--macos-app-icon=assets/log.icns' || '' }}
+            ${{ matrix.os == 'macos-latest' && '--macos-app-icon=assets/logo.icns' || '' }}
 
       - name: Upload built executable
         uses: actions/upload-artifact@v4
