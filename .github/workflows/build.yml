@@ -24,12 +24,20 @@ jobs:
           pip install -r requirements.txt
           pip install nuitka
 
+      - name: Install Linux dependencies
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc g++ patchelf python3-t
+
       - name: Compile Edgy with Nuitka
         shell: bash # 👈 This forces bash syntax on all OSes (fixes the "\" issue) 
         run: | 
           echo "Compiling Edgy on ${{ matrix.os }}..."
+          
           python -m nuitka main.py \
             --standalone \
+            ${{ matrix.os != 'macos-latest' && '--onefile' || '' }} \
             --onefile \
             --enable-plugin=tk-inter \
             --include-data-dir=assets=assets \
@@ -37,7 +45,7 @@ jobs:
             --output-dir=build \
             --output-filename=Edgy \
             ${{ matrix.os == 'windows-latest' && '--windows-icon-from-ico=assets/logo.ico --windows-console-mode=disable' || '' }} \
-            ${{ matrix.os == 'macos-latest' && '--macos-app-icon=assets/logo.icns' || '' }}
+            ${{ matrix.os == 'macos-latest' && '--macos-create-app-bundle --macos-app-icon=assets/logo.icns' || '' }}
 
       - name: Upload built executable
         uses: actions/upload-artifact@v4
