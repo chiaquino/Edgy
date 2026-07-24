@@ -28,7 +28,7 @@ jobs:
         if: matrix.os == 'ubuntu-latest'
         run: |
           sudo apt-get update
-          sudo apt-get install -y gcc g++ patchelf python3-t
+          sudo apt-get install -y gcc g++ patchelf python3-tk
 
       - name: Compile Edgy with Nuitka
         shell: bash # 👈 This forces bash syntax on all OSes (fixes the "\" issue) 
