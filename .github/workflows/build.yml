@@ -5,29 +5,79 @@ on:
 
 jobs:
   build:
-    name: Build on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
+
     strategy:
       matrix:
-        os: [macos-latest, windows-latest]
+        os:
+          - windows-latest
+          - macos-latest
+          - ubuntu-latest
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: "3.11"
 
-      - name: Install dependencies
+      # Linux prerequisites
+      - name: Install Linux packages
+        if: matrix.os == 'ubuntu-latest'
         run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc g++ patchelf python3-tk
+
+      - name: Install Python packages
+        run: |
+          python -m pip install --upgrade pip
           pip install -r requirements.txt
           pip install nuitka
 
-      - name: Compile Edgy with Nuitka
-        shell: bash    # 👈 This forces bash syntax on all OSes (fixes the "\" issue)
+      ####################################################
+      # WINDOWS
+      ####################################################
+      - name: Build Windows
+        if: matrix.os == 'windows-latest'
+        shell: bash
         run: |
-          echo "Compiling Edgy on ${{ matrix.os }}..."
+          python -m nuitka main.py \
+            --standalone \
+            --onefile \
+            --enable-plugin=tk-inter \
+            --assume-yes-for-downloads \
+            --include-data-dir=assets=assets \
+            --include-data-files=logic_config.json=logic_config.json \
+            --windows-icon-from-ico=assets/logo.ico \
+            --windows-console-mode=disable \
+            --output-dir=build \
+            --output-filename=Edgy.exe
+
+      ####################################################
+      # macOS
+      ####################################################
+      - name: Build macOS
+        if: matrix.os == 'macos-latest'
+        shell: bash
+        run: |
+          python -m nuitka main.py \
+            --standalone \
+            --onefile \
+            --enable-plugin=tk-inter \
+            --assume-yes-for-downloads \
+            --include-data-dir=assets=assets \
+            --include-data-files=logic_config.json=logic_config.json \
+            --macos-app-icon=assets/logo.icns \
+            --output-dir=build \
+            --output-filename=Edgy
+
+      ####################################################
+      # Ubuntu
+      ####################################################
+      - name: Build Ubuntu
+        if: matrix.os == 'ubuntu-latest'
+        shell: bash
+        run: |
           python -m nuitka main.py \
             --standalone \
             --onefile \
@@ -36,12 +86,9 @@ jobs:
             --include-data-dir=assets=assets \
             --include-data-files=logic_config.json=logic_config.json \
             --output-dir=build \
-            --output-filename=Edgy \
-            ${{ matrix.os == 'windows-latest' && '--windows-icon-from-ico=assets/logo.ico' || '' }} \
-            ${{ matrix.os == 'macos-latest' && '--macos-app-icon=assets/logo.icns' || '' }}
+            --output-filename=Edgy
 
-      - name: Upload built executable
-        uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v4
         with:
           name: Edgy-${{ matrix.os }}
           path: build/
