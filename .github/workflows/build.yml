@@ -9,7 +9,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        os: [macos-latest]
 
     steps:
       - uses: actions/checkout@v4
@@ -31,22 +31,34 @@ jobs:
           sudo apt-get install -y gcc g++ patchelf python3-tk
 
       - name: Compile Edgy with Nuitka
-        shell: bash # 👈 This forces bash syntax on all OSes (fixes the "\" issue) 
-        run: | 
+        shell: bash
+        run: |
           echo "Compiling Edgy on ${{ matrix.os }}..."
-          
-          python -m nuitka main.py \
-            --standalone \
-            ${{ matrix.os != 'macos-latest' && '--onefile' || '' }} \
-            --onefile \
-            --enable-plugin=tk-inter \
-            --assume-yes-for-downloads \
-            --include-data-dir=assets=assets \
-            --include-data-files=logic_config.json=logic_config.json \
-            --output-dir=build \
-            --output-filename=Edgy \
-            ${{ matrix.os == 'windows-latest' && '--windows-icon-from-ico=assets/logo.ico --windows-console-mode=disable' || '' }} \
-            ${{ matrix.os == 'macos-latest' && '--macos-create-app-bundle --macos-app-icon=assets/logo.icns' || '' }}
+      
+          if [ "${{ matrix.os }}" = "macos-latest" ]; then
+            python -m nuitka main.py \
+              --standalone \
+              --macos-create-app-bundle \
+              --macos-app-icon=assets/logo.icns \
+              --enable-plugin=tk-inter \
+              --assume-yes-for-downloads \
+              --include-data-dir=assets=assets \
+              --include-data-files=logic_config.json=logic_config.json \
+              --output-dir=build \
+              --output-filename=Edgy
+      
+          else
+            python -m nuitka main.py \
+              --standalone \
+              --onefile \
+              --enable-plugin=tk-inter \
+              --assume-yes-for-downloads \
+              --include-data-dir=assets=assets \
+              --include-data-files=logic_config.json=logic_config.json \
+              --output-dir=build \
+              --output-filename=Edgy \
+              ${{ matrix.os == 'windows-latest' && '--windows-icon-from-ico=assets/logo.ico --windows-console-mode=disable' || '' }}
+          fi
 
       - name: Upload built executable
         uses: actions/upload-artifact@v4
