@@ -9,7 +9,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [macos-latest]
+        os: [macos-13]
 
     steps:
       - uses: actions/checkout@v4
@@ -33,7 +33,7 @@ jobs:
 
       # Build for Windows / Linux (Using --onefile)
       - name: Compile Edgy with Nuitka (Windows / Linux)
-        if: matrix.os != 'macos-latest'
+        if: matrix.os != 'macos-13'
         shell: bash
         run: |
           EXTRA_FLAGS=""
@@ -54,11 +54,12 @@ jobs:
 
       # Build for macOS (Creates proper .app bundle)
       - name: Compile Edgy with Nuitka (macOS)
-        if: matrix.os == 'macos-latest'
+        if: matrix.os == 'macos-13'
         run: |
           python -m nuitka main.py \
             --standalone \
             --macos-create-app-bundle \
+            --macos-target-arch=x86_64 \
             --macos-app-icon=assets/logo.icns \
             --enable-plugin=tk-inter \
             --assume-yes-for-downloads \
