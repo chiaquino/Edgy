@@ -76,7 +76,7 @@ jobs:
         if: matrix.os == 'macos-15-intel'
         run: |
           cd build
-          zip -r Edgy-macOS-x86_64.zip Edgy.app
+          zip -r Edgy-macOS-x86_64.zip . -i Edgy.app
 
       - name: Upload Built Executable
         uses: actions/upload-artifact@v4
