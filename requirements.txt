@@ -2,5 +2,5 @@ tkinterdnd2
 Pillow
 openpyxl
 pandas
-numpy
+numpy==1.26.4
 python-docx
