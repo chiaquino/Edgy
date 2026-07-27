@@ -61,6 +61,7 @@ jobs:
           python -m nuitka main.py \
             --standalone \
             --macos-create-app-bundle \
+            --macos-app-name=Edgy \
             --macos-target-arch=x86_64 \
             --macos-app-icon=assets/logo.icns \
             --enable-plugin=tk-inter \
