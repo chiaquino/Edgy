@@ -76,7 +76,15 @@ jobs:
         if: matrix.os == 'macos-15-intel'
         run: |
           cd build
-          zip -r Edgy-macOS-x86_64.zip . -i Edgy.app
+          APP=$(find . -maxdepth 1 -name "*.app" | head -n 1)
+      
+          if [ -z "$APP" ]; then
+            echo "No .app bundle found!"
+            ls -la
+            exit 1
+          fi
+      
+          zip -r Edgy-macOS-x86_64.zip "$APP"
 
       - name: Upload Built Executable
         uses: actions/upload-artifact@v4
