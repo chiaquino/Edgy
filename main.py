@@ -66,7 +66,6 @@ def get_font(size=10, weight="normal", slant="roman"):
     """Return a font tuple using the global APP_FONT_NAME."""
     return (APP_FONT_NAME, size, weight)
 
-
 def resource_path(relative_path):
     """Get absolute path to resource, works for dev and for Nuitka onefile builds."""
     # Nuitka (like PyInstaller) creates a temporary folder for onefile mode,
@@ -78,8 +77,6 @@ def resource_path(relative_path):
     else:
         base_path = os.path.abspath(".")
     return os.path.join(base_path, relative_path)
-
-
 
 
 class ToolTip:
@@ -222,10 +219,14 @@ class EdgeFundApp:
         logo_path = resource_path(os.path.join("assets", "logo.png"))
         if os.path.exists(logo_path):
             image = Image.open(logo_path).resize((180, 180), Image.LANCZOS)
-            logo = ImageTk.PhotoImage(image)
-            tk.Label(scrollable_frame, image=logo, bg=bg_color).pack(pady=(20, 15))
-            scrollable_frame.image = logo
+            
+            # Store the photo image in `self.logo_img` so it's NEVER garbage collected
+            self.logo_img = ImageTk.PhotoImage(image)
+            
+            logo_label = tk.Label(scrollable_frame, image=self.logo_img, bg=bg_color)
+            logo_label.pack(pady=(20, 15))
         else:
+            # Fallback text if logo.png missing
             tk.Label(
                 scrollable_frame,
                 text="Edgy",
@@ -3337,68 +3338,59 @@ if __name__ == "__main__":
     # SPLASH SCREEN
     # ---------------------------
     splash = tk.Tk()
-    splash.overrideredirect(True)
-    splash.geometry("300x200+300+300")
-    splash.configure(bg=COLORS["bg"])
+    splash.overrideredirect(True)  # Remove title bar
+    
+    # Base dimensions for circular appearance
+    splash_w, splash_h = 300, 300
+    splash.config(bg="#d9f0f0")
 
-    logo_path = resource_path("assets/splash.png")
-    if os.path.exists(logo_path):
-        img = Image.open(logo_path).resize((100, 100), Image.LANCZOS)
-        logo = ImageTk.PhotoImage(img)
-        tk.Label(splash, image=logo, bg=COLORS["bg"]).pack(pady=10)
-        splash.image = logo
+    # Make background transparent outside the circle (Windows/macOS)
+    try:
+        splash.wm_attributes("-transparentcolor", "#d9f0f0")
+    except tk.TclError:
+        pass  # Fallback: square colored window
 
-    tk.Label(splash, text="Loading Edgy...", font=(APP_FONT_NAME, 12, "bold"), bg=COLORS["bg"], fg=COLORS["nav"]).pack(expand=True)
+    canvas = tk.Canvas(
+        splash,
+        width=splash_w,
+        height=splash_h,
+        bg="#d9f0f0",
+        highlightthickness=0
+    )
+    canvas.pack(fill="both", expand=True)
 
-    def show_splash():
-        splash = tk.Tk()
-        splash.overrideredirect(True)  # remove title bar
-        splash.geometry("300x300")     # square base for circular appearance
-        splash.config(bg="#d9f0f0")    # soft teal background
-    
-        # Make it circular (Windows & macOS work best)
-        try:
-            splash.wm_attributes("-transparentcolor", "#d9f0f0")  # transparent outside the circle
-        except tk.TclError:
-            pass  # Fallback: will just appear as rounded-color window
-    
-        canvas = tk.Canvas(
-            splash,
-            width=300,
-            height=300,
-            bg="#d9f0f0",
-            highlightthickness=0
-        )
-        canvas.pack(fill="both", expand=True)
-    
-        # Draw circular background (white center)
-        canvas.create_oval(10, 10, 290, 290, fill="white", outline="")
-    
-        # Add logo (optional)
-        logo_path = resource_path(os.path.join("assets", "logo.png"))
-        if os.path.exists(logo_path):
-            logo_img = Image.open(logo_path).resize((120, 120), Image.LANCZOS)
-            logo = ImageTk.PhotoImage(logo_img)
-            canvas.create_image(150, 120, image=logo)
-            canvas.image = logo
-    
-        # Add text
-        canvas.create_text(
-            150, 220,
-            text="Loading Edgy...",
-            font=("Helvetica", 12, "bold"),
-            fill="#333333"
-        )
-    
-        # Center splash on screen
-        splash.update_idletasks()
-        w, h = 100, 100
-        ws = splash.winfo_screenwidth()
-        hs = splash.winfo_screenheight()
-        x = int((ws/2) - (w/2))
-        y = int((hs/2) - (h/2))
-        splash.geometry(f"{w}x{h}+{x}+{y}")
+    # Draw circular background (white center)
+    canvas.create_oval(10, 10, 290, 290, fill="white", outline="")
 
+    # Try loading splash.png first, fallback to logo.png if splash.png doesn't exist
+    splash_path = resource_path(os.path.join("assets", "splash.png"))
+    logo_path = resource_path(os.path.join("assets", "logo.png"))
+    
+    target_path = splash_path if os.path.exists(splash_path) else logo_path
+
+    if os.path.exists(target_path):
+        logo_img = Image.open(target_path).resize((120, 120), Image.LANCZOS)
+        # Store photo reference on the canvas object to prevent Garbage Collection
+        canvas.logo = ImageTk.PhotoImage(logo_img)
+        canvas.create_image(150, 120, image=canvas.logo)
+
+    # Add text
+    canvas.create_text(
+        150, 220,
+        text="Loading Edgy...",
+        font=(APP_FONT_NAME if 'APP_FONT_NAME' in globals() else "Helvetica", 12, "bold"),
+        fill="#333333"
+    )
+
+    # Center splash on screen cleanly
+    splash.update_idletasks()
+    ws = splash.winfo_screenwidth()
+    hs = splash.winfo_screenheight()
+    x = int((ws / 2) - (splash_w / 2))
+    y = int((hs / 2) - (splash_h / 2))
+    splash.geometry(f"{splash_w}x{splash_h}+{x}+{y}")
+
+    # Function to transition to main app
     def start_main_app():
         splash.destroy()
         root = tk.Tk()
@@ -3410,9 +3402,12 @@ if __name__ == "__main__":
 
         png_icon_path = resource_path(os.path.join("assets", "logo.png"))
         ico_icon_path = resource_path(os.path.join("assets", "logo.ico"))
+        
         if os.path.exists(png_icon_path):
             icon_img_main = ImageTk.PhotoImage(Image.open(png_icon_path))
             root.iconphoto(True, icon_img_main)
+            root.icon_ref = icon_img_main  # Prevent GC on icon
+            
         if os.path.exists(ico_icon_path):
             root.iconbitmap(ico_icon_path)
 
