@@ -58,6 +58,7 @@ jobs:
       - name: Compile Edgy with Nuitka (macOS x86_64)
         if: matrix.os == 'macos-15-intel'
         run: |
+          export MACOSX_DEPLOYMENT_TARGET=12.0
           python -m nuitka main.py \
             --standalone \
             --macos-create-app-bundle \
