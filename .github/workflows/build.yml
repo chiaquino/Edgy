@@ -10,7 +10,7 @@ jobs:
     strategy:
       matrix:
         # Target Intel x86_64 macOS architecture
-        os: [macos-15-intel]
+        os: [macos-15-intel, windows-latest]
 
     steps:
       - name: Checkout Repository
