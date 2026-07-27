@@ -1,50 +1,57 @@
-name: Build Edgy (macOS Intel)
+name: Build executables with Nuitka
 
 on:
   workflow_dispatch:
 
 jobs:
   build:
-    runs-on: macos-13
+    name: Build on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [macos-latest]
 
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-python@v5
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: '3.11'
 
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip
           pip install -r requirements.txt
-          pip install -U nuitka ordered-set zstandard
+          pip install nuitka
 
-      - name: Verify architecture
+      - name: Install Linux dependencies
+        if: matrix.os == 'ubuntu-latest'
         run: |
-          uname -m
-          python -c "import platform; print(platform.machine())"
+          sudo apt-get update
+          sudo apt-get install -y gcc g++ patchelf python3-tk
 
-      - name: Build
-        run: |
+      - name: Compile Edgy with Nuitka
+        shell: bash # 👈 This forces bash syntax on all OSes (fixes the "\" issue) 
+        run: | 
+          echo "Compiling Edgy on ${{ matrix.os }}..."
+          
           python -m nuitka main.py \
             --standalone \
-            --macos-create-app-bundle \
-            --macos-target-arch=x86_64 \
-            --macos-app-icon=assets/logo.icns \
+            ${{ matrix.os != 'macos-latest' && '--onefile' || '' }} \
+            --onefile \
             --enable-plugin=tk-inter \
             --assume-yes-for-downloads \
             --include-data-dir=assets=assets \
             --include-data-files=logic_config.json=logic_config.json \
-            --show-progress \
-            --show-scons \
-            --verbose \
-            --output-dir=build
+            --output-dir=build \
+            --output-filename=Edgy \
+            ${{ matrix.os == 'windows-latest' && '--windows-icon-from-ico=assets/logo.ico --windows-console-mode=disable' || '' }} \
+            ${{ matrix.os == 'macos-latest' && '--macos-create-app-bundle --macos-app-icon=assets/logo.icns' && ' --macos-target-arch=x86_64'
+            || '' }}
 
-      - uses: actions/upload-artifact@v4
+      - name: Upload built executable
+        uses: actions/upload-artifact@v4
         with:
-          name: Edgy-macos13
+          name: Edgy-${{ matrix.os }}
           path: build
-
-
 
